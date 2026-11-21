@@ -29,11 +29,13 @@
         <div class="who-text"><h1 id="titleText">努力城堡</h1><small id="subText"></small></div>
       </div>
       <div class="chips">
+        <button class="chip chip-link" id="chipLink" type="button" hidden></button>
         <div class="chip chip-streak" id="chipStreak"></div>
       </div>
     </header>
     <div class="hud-bottom">
       <button class="floor-card" id="floorCard" type="button"></button>
+      <div class="remote" id="remote" hidden></div>
     </div>
   </section>
 
@@ -72,13 +74,16 @@
         <div id="typeList" class="type-list"></div>
       </div>
       <div class="card list-card">
+        <button class="row-btn" id="linkBtn" type="button"></button>
+      </div>
+      <div class="card list-card">
         <button class="row-btn" id="soundBtn" type="button"></button>
         <button class="row-btn" id="exportBtn" type="button"></button>
         <label class="row-btn" id="importLbl"><input type="file" id="importFile" accept="application/json,.json" hidden></label>
         <a class="row-btn" id="demoLink" href="?demo"></a>
         <button class="row-btn danger" id="resetBtn" type="button"></button>
       </div>
-      <p class="foot">資料只存在這部裝置的瀏覽器內，不會上傳。<br>努力城堡 · 一次努力，一塊磚。</p>
+      <p class="foot">資料存在這部裝置的瀏覽器內；連接大屏幕時，城堡資料會經連線服務傳到大屏幕。<br>努力城堡 · 一次努力，一塊磚。</p>
     </div>
   </section>
 

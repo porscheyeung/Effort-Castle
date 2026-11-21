@@ -12,9 +12,127 @@
     if (DEMO) return E.demo();
     try { return E.read(JSON.parse(localStorage.getItem(E.KEY))) || E.fresh(); } catch { return E.fresh(); }
   }
-  function save() {
+  function save(ev) {
     if (DEMO) return;
     try { localStorage.setItem(E.KEY, JSON.stringify(S)); } catch { toast({ title: '未能儲存', text: '瀏覽器儲存空間已滿或被封鎖。' }); }
+    linkPush(ev || { kind: 'sync' });
+  }
+
+  // ---------- 大屏幕連線（手機是資料來源，大屏幕只看） ----------
+  const LINK_KEY = 'effort-castle-link-v1';
+  const LINK_API = params.get('link') || 'https://edgelab-web-porscheyeung.zocomputer.io/effort-link';
+  const SCREEN_URL = 'porscheyeung.github.io/Effort-Castle/screen';
+  let link = DEMO ? null : loadLink(), screens = -1, linkQ = Promise.resolve();
+  function loadLink() { try { const l = JSON.parse(localStorage.getItem(LINK_KEY)); return l && typeof l.token === 'string' ? l : null; } catch { return null; } }
+  async function linkApi(path, data) {
+    const r = await fetch(LINK_API + path, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: JSON.stringify(data), cache: 'no-store' });
+    return { ok: r.ok, status: r.status, data: await r.json().catch(() => ({})) };
+  }
+  const linkState = () => ({ name: S.name, castle: S.castle, goal: S.goal, types: S.types, log: S.log });
+  function linkPush(event) {
+    if (!link) return;
+    const token = link.token, body = { token, state: linkState(), event };
+    linkQ = linkQ.then(() => linkApi('/api/push', body)).then((r) => {
+      if (r.status === 410) linkLost(); else if (r.ok) setScreens(r.data.screens);
+    }).catch(() => setScreens(-2));
+  }
+  function setScreens(n) { if (n === screens) return; screens = n; renderLink(); }
+  function linkLost() {
+    if (!link) return;
+    link = null; screens = -1;
+    try { localStorage.removeItem(LINK_KEY); } catch {}
+    renderLink(); toast({ title: '大屏幕已斷開', text: '大屏幕換了手機或已重設。要再連接，到「設定」輸入新號碼。' });
+  }
+  async function linkCheck() {
+    if (!link || document.hidden) return;
+    try { const r = await linkApi('/api/status', { token: link.token }); if (r.status === 410) linkLost(); else if (r.ok) setScreens(r.data.screens); } catch { setScreens(-2); }
+  }
+  setInterval(linkCheck, 5000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) linkCheck(); });
+  const linkWord = () => (screens > 0 ? '大屏幕在線' : screens === -2 ? '未能連線' : '大屏幕未開');
+  function renderLink() {
+    const on = !!link, ok = screens > 0;
+    $('chipLink').hidden = !on;
+    $('chipLink').className = 'chip chip-link' + (ok ? ' ok' : '');
+    $('chipLink').innerHTML = `${icon('screen')}<i class="ldot"></i>`;
+    $('chipLink').setAttribute('aria-label', `大屏幕：${linkWord()}`);
+    $('floorCard').hidden = on; $('remote').hidden = !on;
+    document.body.classList.toggle('linked', on);
+    if (on) renderRemote();
+    fitScene();
+    if (view === 'settings') renderSettings();
+    if (!$('sheet').hidden && $('linkSheet')) linkSheet(true);
+  }
+  let fitH = -1;
+  function fitScene() {
+    if (view !== 'castle') return;
+    const hgt = link ? Math.max(0, $('remote').offsetHeight + 46 - 26) : 0;
+    if (hgt === fitH) return;
+    fitH = hgt; wrap.style.bottom = hgt ? hgt + 'px' : '';
+    if (view === 'castle') renderScene({ scroll: 'top' });
+  }
+  function renderRemote() {
+    const st = E.stats(S), types = E.activeTypes(S), today = new Map();
+    for (const e of S.log) if (E.dayKey(e.ts) === st.todayKey) today.set(e.type, (today.get(e.type) || 0) + 1);
+    const dots = Array.from({ length: 10 }, (_, j) => { const idx = st.floors * 10 + j, on = idx < S.log.length; return `<i style="${on ? `background:${E.typeOf(S, S.log[idx].type).color}` : ''}" class="${on ? 'on' : ''}"></i>`; }).join('');
+    $('remote').innerHTML = `<div class="rm-head"><span class="rm-st${screens > 0 ? ' ok' : ''}"><i class="ldot"></i>${linkWord()}</span><span class="rm-fl">第 ${st.floors + 1} 層 <span class="dots">${dots}</span></span></div>
+      <div class="rm-grid${types.length > 6 ? ' many' : ''}">${types.map((t) => `<button class="rm-btn" data-type="${t.id}" style="--c:${t.color}" type="button"><span class="e-ic">${icon(t.icon)}</span><b>${esc(t.name)}</b><small>今日 ${today.get(t.id) || 0}</small></button>`).join('')}</div>`;
+    $('remote').querySelectorAll('.rm-btn').forEach((b) => b.onclick = () => {
+      if (!S.setup) return welcome();
+      b.classList.remove('picked'); void b.offsetWidth; b.classList.add('picked'); buzz(15);
+      addBrick(b.dataset.type);
+    });
+  }
+  function linkSheet(refresh) {
+    const html = link
+      ? `<div id="linkSheet"></div><div class="link-hero ${screens > 0 ? 'ok' : ''}">${icon('phone')}<span class="lh-line"></span>${icon('screen')}</div>
+         <h3>${screens > 0 ? '已連接大屏幕' : '已配對，等待大屏幕'}</h3>
+         <p class="sub">${screens > 0 ? '在城堡頁按下面的彩色按鈕，一按就砌一塊磚，大屏幕會即時顯示。' : `大屏幕未打開。用 iPad 或電腦打開 <b>${SCREEN_URL}</b>，城堡就會自動出現。`}</p>
+         <div class="btn-col"><button class="btn" id="lDone">${icon('check')}好</button><button class="btn ghost" id="lOff">${icon('unlink')}斷開大屏幕</button></div>`
+      : `<div id="linkSheet"></div><div class="link-hero">${icon('phone')}<span class="lh-line"></span>${icon('screen')}</div>
+         <h3>連接大屏幕</h3>
+         <p class="sub">手機當遙控器，iPad 或電腦當大屏幕看城堡長高。兩部機不用連同一個 Wi‑Fi。</p>
+         <ol class="link-steps"><li>在 iPad 或電腦打開<br><b class="url">${SCREEN_URL}</b></li><li>輸入大屏幕上的 4 位數字</li></ol>
+         <div class="pin" id="pin">${[0, 1, 2, 3].map((i) => `<span data-i="${i}"></span>`).join('')}<input id="pinIn" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="one-time-code" aria-label="大屏幕上的 4 位數字"></div>
+         <p class="pin-err" id="pinErr"></p>
+         <button class="btn" id="lGo" disabled>${icon('screen')}連接</button>`;
+    openSheet(html, refresh);
+    if (link) {
+      $('lDone').onclick = closeSheet;
+      $('lOff').onclick = () => {
+        const token = link.token;
+        link = null; screens = -1;
+        try { localStorage.removeItem(LINK_KEY); } catch {}
+        linkApi('/api/unpair', { token }).catch(() => {});
+        closeSheet(); renderLink(); toast({ title: '已斷開大屏幕', text: '城堡資料仍然留在這部手機。' });
+      };
+      return;
+    }
+    const inp = $('pinIn'), boxes = [...$('pin').querySelectorAll('span')];
+    const draw = () => { const v = inp.value.replace(/\D/g, '').slice(0, 4); inp.value = v; boxes.forEach((b, i) => { b.textContent = v[i] || ''; b.classList.toggle('on', !!v[i]); b.classList.toggle('cur', i === v.length && document.activeElement === inp); }); $('lGo').disabled = v.length !== 4; $('pinErr').textContent = ''; };
+    inp.oninput = () => { draw(); if (inp.value.length === 4) go(); };
+    inp.onfocus = inp.onblur = draw;
+    $('pin').onclick = () => inp.focus();
+    const go = async () => {
+      if ($('lGo').disabled) return;
+      $('lGo').disabled = true; $('lGo').classList.add('busy');
+      try {
+        const r = await linkApi('/api/pair', { code: inp.value });
+        if (!r.ok) throw new Error(r.data.error || '未能連接，請再試一次。');
+        link = { token: r.data.token, at: Date.now() }; screens = r.data.screens;
+        try { localStorage.setItem(LINK_KEY, JSON.stringify(link)); } catch {}
+        linkPush({ kind: 'sync' });
+        closeSheet(); setView('castle'); renderLink(); renderScene({ scroll: 'top' }); sfx('floor');
+        toast({ title: '已連接大屏幕', text: '按下面的彩色按鈕，一按就砌一塊磚。' });
+      } catch (e) {
+        inp.value = ''; draw(); inp.focus();
+        $('pinErr').textContent = e.name === 'TypeError' ? '未能連線，請檢查網絡後再試。' : e.message;
+        $('pin').classList.remove('shake'); void $('pin').offsetWidth; $('pin').classList.add('shake');
+      }
+      $('lGo') && $('lGo').classList.remove('busy');
+    };
+    $('lGo').onclick = go;
+    draw(); setTimeout(() => inp.focus(), 280);
   }
 
   // ---------- 音效 ----------
@@ -54,10 +172,11 @@
     });
     const keep = wrap.scrollHeight - wrap.scrollTop;
     sceneEl.innerHTML = sceneInfo.svg;
-    const k = w / 360;
-    if (opts.scroll === 'top') wrap.scrollTop = Math.max(0, sceneInfo.topY * k - 40);
+    const k = w / 360, anchor = link ? 0.56 : 0.48;
+    if (opts.scroll === 'top' && link) wrap.scrollTop = Math.max(0, sceneInfo.brickY(S.log.length) * k - h * anchor);
+    else if (opts.scroll === 'top') wrap.scrollTop = Math.max(0, sceneInfo.topY * k - 40);
     else if (opts.scroll === 'brick') {
-      const y = sceneInfo.brickY(opts.fresh) * k, target = Math.max(0, y - h * 0.48);
+      const y = sceneInfo.brickY(opts.fresh) * k, target = Math.max(0, y - h * anchor);
       wrap.scrollTop = wrap.scrollHeight - keep;
       wrap.scrollTo({ top: target, behavior: 'smooth' });
     } else wrap.scrollTop = wrap.scrollHeight - keep;
@@ -101,26 +220,31 @@
     const before = S.log.length;
     const next = E.add(S, typeId);
     if (next === S) return;
-    S = next; save();
+    S = next;
     const after = S.log.length, out = E.outcome(before, after, S.goal);
+    const praise = Math.floor(Math.random() * E.PRAISE.length);
+    save({ kind: 'brick', i: after - 1, floorDone: out.floorDone, goalDone: out.goalDone, praise });
     lastFresh = after - 1; lastFreshFloor = out.floorDone;
     if (view !== 'castle') setView('castle');
     renderScene({ fresh: lastFresh, freshFloor: out.floorDone, scroll: 'brick' });
     renderHud(lastFresh % 10);
+    if (link) renderRemote();
     sfx('brick'); setTimeout(() => buzz(25), 320);
     $('mainBtn').classList.remove('bump'); void $('mainBtn').offsetWidth; $('mainBtn').classList.add('bump');
     const t = E.typeOf(S, typeId);
-    if (out.floorDone >= 0) {
+    if (out.floorDone >= 0 && link && screens > 0) {
+      setTimeout(() => { sfx(out.goalDone ? 'goal' : 'floor'); confetti(out.goalDone ? 160 : 90); toast({ color: t.color, title: out.goalDone ? '努力城堡建成了！' : `第 ${out.floorDone + 1} 層完成！`, text: `看看大屏幕，${E.roomAt(out.floorDone).who}搬進來了。` }); }, 900);
+    } else if (out.floorDone >= 0) {
       setTimeout(() => { sfx(out.goalDone ? 'goal' : 'floor'); confetti(out.goalDone ? 260 : 140); floorModal(out.floorDone, out.goalDone); }, 900);
     } else {
-      toast({ color: t.color, title: `${t.name} +1`, text: E.PRAISE[Math.floor(Math.random() * E.PRAISE.length)], undo: true });
+      toast({ color: t.color, title: `${t.name} +1`, text: E.PRAISE[praise], undo: true });
     }
   }
   function undoLast(fromToast) {
     if (!S.log.length) return;
     const last = S.log[S.log.length - 1];
     const go = () => {
-      S = E.undo(S); save(); renderAll();
+      S = E.undo(S); save({ kind: 'undo' }); renderAll();
       toast({ color: E.typeOf(S, last.type).color, title: '已收回一塊磚', text: '按錯不要緊，再選一次就好。' });
     };
     if (fromToast) return go();
@@ -248,6 +372,8 @@
     $('importLbl').innerHTML = `${icon('up')}還原備份<input type="file" id="importFile" accept="application/json,.json" hidden>`;
     $('importFile').onchange = importFile;
     $('demoLink').innerHTML = `${icon('eye')}看看示範城堡<span class="sub">不影響你的資料</span>`;
+    $('linkBtn').innerHTML = `${icon('screen')}連接大屏幕<span class="sub">${link ? (screens > 0 ? '已連接' : '已配對 · 大屏幕未開') : 'iPad／電腦'}</span>`;
+    $('linkBtn').hidden = DEMO;
     $('resetBtn').innerHTML = `${icon('trash')}重新開始`;
   }
   function editType(id) {
@@ -381,10 +507,11 @@
     if (v === 'log') renderLog();
     if (v === 'rooms') renderRooms();
     if (v === 'settings') renderSettings();
-    if (v === 'castle') renderScene();
+    if (v === 'castle') { fitScene(); renderScene(); }
   }
   function renderAll(opts = {}) {
     renderHud();
+    if (link) renderRemote();
     if (view === 'castle' || opts.scroll) renderScene(opts);
     if (view === 'log') renderLog();
     if (view === 'rooms') renderRooms();
@@ -403,6 +530,8 @@
   $('addType').onclick = () => editType(null);
   $('soundBtn').onclick = () => { S = { ...S, sound: !S.sound }; save(); renderSettings(); sfx('tap'); };
   $('exportBtn').onclick = exportData;
+  $('linkBtn').onclick = () => { sfx('tap'); linkSheet(); };
+  $('chipLink').onclick = () => { sfx('tap'); linkSheet(); };
   $('resetBtn').onclick = resetAll;
   $('setName').onchange = () => { S = { ...S, name: E.clean($('setName').value, 12) }; save(); renderHud(); };
   $('setCastle').onchange = () => { S = { ...S, castle: E.clean($('setCastle').value, 16) }; save(); renderHud(); renderScene(); };
@@ -424,8 +553,11 @@
 
   if (DEMO) { $('demoBar').hidden = false; document.body.classList.add('demo'); }
   renderHud();
+  renderLink();
   renderScene({ scroll: 'top' });
   if (!S.setup) setTimeout(welcome, 250);
+  if (link) { linkPush({ kind: 'sync' }); }
+  if (params.has('pair') && !DEMO) setTimeout(() => { if (S.setup) { setView('settings'); linkSheet(); } }, 400);
 
   if (params.has('test')) window.__ec = { get state() { return S; }, set state(v) { S = v; save(); renderAll({ scroll: 'top' }); }, add: addBrick, E };
 })();

@@ -11,8 +11,16 @@
 - **設定**：名字、城堡名、目標高度；努力項目（最多 8 個，名稱、顏色、圖示可改，隱藏後舊磚保留）；音效；下載／還原備份；示範城堡；重新開始（要輸入「重新開始」）。
 - 點城堡上的磚可看是哪天哪項努力；點亮燈的窗可看房間。
 
+## 大屏幕模式（手機遙控＋iPad／電腦顯示）
+- 大屏幕打開 `screen.html`（https://porscheyeung.github.io/Effort-Castle/screen ），會顯示 4 位數字配對碼。
+- 手機：設定 →「連接大屏幕」→ 輸入號碼。之後城堡頁變成遙控器：每個努力項目一個大按鈕，一按即砌一塊磚（仍可按「按錯了」收回）。
+- 大屏幕：左邊城堡、右邊總磚數、目標進度、本層進度、連續日數、今日的磚；加磚時磚塊落下及讚賞卡；完成一層全螢幕慶祝及住客入住；完成目標戴皇冠。可開聲音、全螢幕、換一部手機。點一下畫面才可發聲（瀏覽器規定），並會盡量保持屏幕常亮。
+- 手機是唯一資料來源；大屏幕只看不改。兩部機不用同一 Wi‑Fi。大屏幕重新載入會續用原配對。
+- 連線中轉 `link-server/server.ts`（Bun，127.0.0.1:18796，Zo process 服務 `effort-castle-link`），經共用 edgelab-web 的 `/effort-link` 對外（`Migration/effort_link_gateway.py`、`Migration/shared_entrypoint.py`）。共用入口是多線程 WSGI，所以大屏幕每秒輪詢，不用長連線。配對碼 15 分鐘過期、用一次即失效；讀取城堡需要大屏幕自己的長房間編號，推送需要手機的配對憑證。房間資料存於 `link-server/data/rooms.json`（不入 git），60 日無用自動清除。
+
 ## 技術
-純靜態 HTML／CSS／JavaScript，所有圖像為程式繪畫的 SVG，不需打包。資料只存在瀏覽器 localStorage（`effort-castle-v1`），不上傳。
+純靜態 HTML／CSS／JavaScript，所有圖像為程式繪畫的 SVG，不需打包。資料存在瀏覽器 localStorage（`effort-castle-v1`）；只有連接大屏幕時才經連線中轉傳送（配對憑證存 `effort-castle-link-v1`，大屏幕房間存 `effort-castle-screen-v1`）。
 - `engine.js` 規則（純函數，可在 Node 測試）；`art.js` 圖示、住客、房間插畫、城堡場景；`app.js` 介面。
 - `?demo` 示範模式（47 塊磚，不寫入存檔）；`?test` 開放 `window.__ec` 給測試。
-- `npm test`：規則測試＋Playwright（Chromium 流程、iPhone SE／13／15 Pro Max WebKit 版面）。
+- `npm test`：規則測試＋Playwright（Chromium 流程、iPhone SE／13／15 Pro Max WebKit 版面、大屏幕連線 Chromium＋WebKit；會自動在 18798 開臨時中轉）。
+- `screen.html?demo` 大屏幕示範（不需連線）；`?link=<網址>` 改用其他中轉（測試用）。

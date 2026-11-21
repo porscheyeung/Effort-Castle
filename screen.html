@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F3E8D8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="城堡大屏幕">
+<meta name="description" content="努力城堡大屏幕：用手機按掣，在 iPad 或電腦看城堡長高。">
+<title>努力城堡 · 大屏幕</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800;900&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="screen.css">
+</head>
+<body>
+<main class="pair" id="pairView" hidden>
+  <div class="pair-art" id="pairArt"></div>
+  <section class="pair-main">
+    <p class="eyebrow">EFFORT CASTLE · BIG SCREEN</p>
+    <h1>用手機按掣，<br>在這裏看城堡長高</h1>
+    <ol class="steps">
+      <li><i>1</i><div><b>在手機打開努力城堡</b><span>就是平時砌磚的那一個</span></div></li>
+      <li><i>2</i><div><b>按「設定」→「連接大屏幕」</b><span>手機和大屏幕不用連同一個 Wi‑Fi</span></div></li>
+      <li><i>3</i><div><b>輸入下面的號碼</b><span id="codeNote">號碼會定時更新，以畫面上最新的為準</span></div></li>
+    </ol>
+    <div class="code" id="code" aria-live="polite"></div>
+    <p class="pair-status" id="pairStatus"></p>
+  </section>
+</main>
+
+<main class="live" id="liveView" hidden>
+  <section class="stage" aria-label="城堡">
+    <div class="stage-wrap" id="sceneWrap"><div class="scene" id="scene"></div></div>
+    <div class="stage-name" id="stageName"></div>
+  </section>
+  <section class="panel">
+    <header class="p-head">
+      <div><p class="eyebrow">EFFORT CASTLE · LIVE</p><h1 id="title">努力城堡</h1></div>
+      <div class="live-pill" id="livePill"></div>
+    </header>
+    <div class="hero card">
+      <div class="hero-num"><b id="total">0</b><span>塊磚</span></div>
+      <div class="hero-goal">
+        <div class="hg-top"><span id="goalText"></span><b id="goalPct"></b></div>
+        <div class="hg-bar"><i id="goalBar"></i></div>
+      </div>
+    </div>
+    <div class="floor card" id="floorCard"></div>
+    <div class="tiles" id="tiles"></div>
+    <div class="today card"><div class="today-head"><h2>今日的磚</h2><span id="todayN"></span></div><div class="today-list" id="todayList"></div></div>
+    <footer class="tools">
+      <button type="button" id="soundBtn" class="tool"></button>
+      <button type="button" id="fullBtn" class="tool"></button>
+      <button type="button" id="swapBtn" class="tool"></button>
+    </footer>
+  </section>
+</main>
+
+<div class="brick-pop" id="brickPop" hidden></div>
+<div class="celebrate" id="celebrate" hidden><div class="cel-card" id="celCard"></div></div>
+<div class="note" id="note" hidden></div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<script src="engine.js"></script>
+<script src="art.js"></script>
+<script src="screen.js"></script>
+</body>
+</html>
