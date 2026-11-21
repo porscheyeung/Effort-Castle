@@ -73,7 +73,7 @@
       else failures++;
     } catch { failures++; }
     renderConn();
-    pollTimer = setTimeout(poll, document.visibilityState === 'hidden' ? 5000 : failures ? Math.min(8000, 1500 * failures) : (now ? 600 : 1000));
+    pollTimer = setTimeout(poll, document.visibilityState === 'hidden' ? 5000 : failures ? Math.min(8000, 1500 * failures) : (now ? 300 : 500));
   }
 
   function apply(d, first) {
