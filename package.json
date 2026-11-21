@@ -1,0 +1,11 @@
+{
+  "name": "effort-castle",
+  "version": "1.0.0",
+  "private": true,
+  "description": "努力城堡：一次努力，一塊磚",
+  "scripts": {
+    "test": "node --test tests/engine.test.js && playwright test",
+    "start": "python3 -m http.server 4192 --bind 127.0.0.1"
+  },
+  "devDependencies": { "@playwright/test": "1.64.1" }
+}

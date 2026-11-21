@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FBF5EA">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="努力城堡">
+<meta name="description" content="每一次努力，砌一塊磚；砌滿一層，就有新朋友搬進來。">
+<title>努力城堡</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800;900&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="app">
+  <div id="demoBar" class="demo-bar" hidden><span>示範模式 · 不會儲存</span><a href="./">離開</a></div>
+
+  <section class="view view-castle active" id="view-castle" aria-label="城堡">
+    <div class="scene-wrap" id="sceneWrap"><div class="scene" id="scene"></div></div>
+    <header class="hud-top">
+      <div class="who">
+        <div class="who-badge" id="whoBadge"></div>
+        <div class="who-text"><h1 id="titleText">努力城堡</h1><small id="subText"></small></div>
+      </div>
+      <div class="chips">
+        <div class="chip chip-streak" id="chipStreak"></div>
+      </div>
+    </header>
+    <div class="hud-bottom">
+      <button class="floor-card" id="floorCard" type="button"></button>
+    </div>
+  </section>
+
+  <section class="view view-log" id="view-log" aria-label="努力足跡">
+    <div class="page">
+      <header class="page-head"><p class="eyebrow">EFFORT TRAIL</p><h2>努力足跡</h2></header>
+      <div class="tiles" id="tiles"></div>
+      <div class="card cal-card">
+        <div class="cal-head"><button class="icon-btn" id="calPrev" aria-label="上個月"></button><h3 id="calTitle"></h3><button class="icon-btn" id="calNext" aria-label="下個月"></button></div>
+        <div class="cal-week"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
+        <div class="cal-grid" id="calGrid"></div>
+      </div>
+      <div class="card"><h3 class="card-title">磚塊從哪裏來</h3><div id="typeBars"></div></div>
+      <div class="card"><div class="card-title-row"><h3 class="card-title" id="dayTitle">最近的努力</h3><button class="text-btn" id="undoBtn" type="button"></button></div><div id="dayList"></div></div>
+    </div>
+  </section>
+
+  <section class="view view-rooms" id="view-rooms" aria-label="城堡房間">
+    <div class="page">
+      <header class="page-head"><p class="eyebrow">ROOMS &amp; FRIENDS</p><h2>城堡房間</h2><p class="lede" id="roomsLede"></p></header>
+      <div class="room-grid" id="roomGrid"></div>
+    </div>
+  </section>
+
+  <section class="view view-settings" id="view-settings" aria-label="設定">
+    <div class="page">
+      <header class="page-head"><p class="eyebrow">SETTINGS</p><h2>設定</h2></header>
+      <div class="card form-card">
+        <label class="field"><span>小朋友名字</span><input id="setName" maxlength="12" placeholder="例如：朗朗" autocomplete="off"></label>
+        <label class="field"><span>城堡名字</span><input id="setCastle" maxlength="16" placeholder="例如：晨光城堡" autocomplete="off"></label>
+        <div class="field"><span>目標高度</span><div class="seg" id="setGoal" role="radiogroup"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-title-row"><h3 class="card-title">努力項目</h3><button class="text-btn" id="addType" type="button"></button></div>
+        <p class="hint">每個項目有自己的磚塊顏色。隱藏後舊磚仍然保留。</p>
+        <div id="typeList" class="type-list"></div>
+      </div>
+      <div class="card list-card">
+        <button class="row-btn" id="soundBtn" type="button"></button>
+        <button class="row-btn" id="exportBtn" type="button"></button>
+        <label class="row-btn" id="importLbl"><input type="file" id="importFile" accept="application/json,.json" hidden></label>
+        <a class="row-btn" id="demoLink" href="?demo"></a>
+        <button class="row-btn danger" id="resetBtn" type="button"></button>
+      </div>
+      <p class="foot">資料只存在這部裝置的瀏覽器內，不會上傳。<br>努力城堡 · 一次努力，一塊磚。</p>
+    </div>
+  </section>
+
+  <nav class="tabbar" aria-label="主選單">
+    <button class="tab active" data-view="castle" type="button"><i></i><span>城堡</span></button>
+    <button class="tab" data-view="log" type="button"><i></i><span>足跡</span></button>
+    <button class="tab-main" id="mainBtn" type="button" aria-label="我努力了"><span class="tm-ring"></span><i></i><b>我努力了</b></button>
+    <button class="tab" data-view="rooms" type="button"><i></i><span>房間</span></button>
+    <button class="tab" data-view="settings" type="button"><i></i><span>設定</span></button>
+  </nav>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" hidden><div class="grab"></div><div class="sheet-body" id="sheetBody"></div></div>
+<div class="modal" id="modal" role="dialog" aria-modal="true" hidden><div class="modal-card" id="modalCard"></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<script src="engine.js"></script>
+<script src="art.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
